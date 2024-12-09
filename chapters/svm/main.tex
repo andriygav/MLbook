@@ -1,3 +1,244 @@
+\section{SVM-регрессия}
+\subsection{Постановка задачи}
+\par В задаче регрессии требуется найти функцию \( f(x) = w^T \phi(x) + b \), которая аппроксимирует целевые значения \( y \) на основе входных данных \( x \), минимизируя ошибки предсказания.
+\par В SVM-регрессии вводится допустимая область погрешностей — \(\epsilon\)-окрестность. Это означает, что отклонения \( |f(x_i) - y_i| \) в пределах \(\epsilon\) считаются несущественными, и модель игнорирует их. Цель — минимизировать сложность модели, связанную с \(\|w\|\), штрафуя при этом за отклонения, выходящие за пределы \(\epsilon\).
+
+\subsection{Прямая задача}
+\par\textbf{Функция потерь.}  
+Для задачи SVM-регрессии используется \(\epsilon\)-чувствительная функция потерь:
+\begin{equation*}
+    L_\epsilon(f(x), y) = 
+    \begin{cases} 
+        0, & \text{если } |f(x) - y| \leq \epsilon, \\ 
+        |f(x) - y| - \epsilon, & \text{иначе.}
+    \end{cases}
+\end{equation*}
+\noindent\textbf{Прямая постановка задачи:}
+\begin{equation*}
+    \min_{w, b} \frac{1}{2} \|w\|^2 + C \sum_{i=1}^n L_\epsilon(f(x_i), y_i),
+\end{equation*}
+где:
+\begin{itemize}
+    \item \(\|w\|^2\) — регуляризационный член, минимизирующий сложность модели,
+    \item \(C\) — коэффициент, регулирующий баланс между штрафами за ошибки и сложностью модели,
+    \item \(L_\epsilon(f(x_i), y_i)\) — штраф за выход за пределы \(\epsilon\)-окрестности.
+\end{itemize}
+
+\subsection{Преобразование задачи}
+\par Для учёта отклонений выше \(\epsilon\) вводятся штрафные переменные \(\xi_i\) и \(\xi_i^*\):  
+\begin{itemize}
+    \item \(\xi_i\) — превышение сверху (\(y_i > f(x_i) + \epsilon\)),
+    \item \(\xi_i^*\) — превышение снизу (\(y_i < f(x_i) - \epsilon\)).
+\end{itemize}
+\par Задача минимизации принимает вид:
+\begin{equation*}
+    \min_{w, b, \xi, \xi^*} \frac{1}{2} \|w\|^2 + C \sum_{i=1}^n (\xi_i + \xi_i^*),
+\end{equation*}
+при ограничениях:
+\begin{equation*}
+\begin{aligned}
+    y_i - (w^T \phi(x_i) + b) \leq \epsilon + \xi_i, \\
+    (w^T \phi(x_i) + b) - y_i \leq \epsilon + \xi_i^*, \\
+    \xi_i, \xi_i^* \geq 0.
+\end{aligned}
+\end{equation*}
+
+\subsection{Метод Лагранжа}
+\par Для решения задачи вводится лагранжиан, который включает:
+\begin{itemize}
+    \item Целевую функцию,
+    \item Ограничения через множители Лагранжа (\(\alpha, \alpha^*, \eta, \eta^*\)).
+\end{itemize}
+\par Лагранжиан записывается как:
+\begin{equation*}
+\begin{aligned}
+    L(w, b, \xi, \xi^*, \alpha, \alpha^*, \eta, \eta^*) &= \frac{1}{2} \|w\|^2 + C \sum_{i=1}^n (\xi_i + \xi_i^*) - \\
+    &\quad - \sum_{i=1}^n \alpha_i \big[ \epsilon + \xi_i - y_i + w^T \phi(x_i) + b \big] - \\
+    &\quad - \sum_{i=1}^n \alpha_i^* \big[ \epsilon + \xi_i^* + y_i - w^T \phi(x_i) - b \big] - \\
+    &\quad - \sum_{i=1}^n (\eta_i \xi_i + \eta_i^* \xi_i^*).
+\end{aligned}
+\end{equation*}
+\par Для нахождения двойственной задачи необходимо минимизировать \(L\) по \(w\), \(b\), \(\xi\), \(\xi^*\) и максимизировать по множителям Лагранжа.
+
+\subsection{Условия оптимальности}
+\begin{enumerate}
+    \item Производная по \(w\):
+    \begin{equation*}
+        \frac{\partial L}{\partial w} = w - \sum_{i=1}^n (\alpha_i - \alpha_i^*) \phi(x_i) = 0 \implies 
+        w = \sum_{i=1}^n (\alpha_i - \alpha_i^*) \phi(x_i).
+    \end{equation*}
+    \item Производная по \(b\):
+    \begin{equation*}
+        \frac{\partial L}{\partial b} = \sum_{i=1}^n (\alpha_i - \alpha_i^*) = 0.
+    \end{equation*}
+    \item Производные по \(\xi_i\) и \(\xi_i^*\):
+    \begin{equation*}
+        \alpha_i + \eta_i = C, \quad \alpha_i^* + \eta_i^* = C, \quad 0 \leq \alpha_i, \alpha_i^* \leq C.
+    \end{equation*}
+\end{enumerate}
+
+\subsection{Двойственная задача}
+\par Подставляя условия оптимальности в лагранжиан, исключаем \(w\), \(b\), \(\xi_i\), \(\xi_i^*\). Получаем двойственную задачу:
+\begin{equation*}
+    \max_{\alpha, \alpha^*} -\frac{1}{2} \sum_{i,j=1}^n (\alpha_i - \alpha_i^*)(\alpha_j - \alpha_j^*) K(x_i, x_j) 
+    - \epsilon \sum_{i=1}^n (\alpha_i + \alpha_i^*) + \sum_{i=1}^n y_i (\alpha_i - \alpha_i^*),
+\end{equation*}
+где \(K(x_i, x_j) = \phi(x_i)^T \phi(x_j)\) — ядровая функция.
+\par Ограничения:
+\begin{equation*}
+    \sum_{i=1}^n (\alpha_i - \alpha_i^*) = 0, \quad 0 \leq \alpha_i, \alpha_i^* \leq C.
+\end{equation*}
+\par Для решения двойственной задачи используется метод квадратичного программирования.
+
+\subsection{Построение финальной модели}
+\par После решения двойственной задачи оптимальные \(\alpha_i\) и \(\alpha_i^*\) определяют параметры модели:
+\begin{equation*}
+    f(x) = \sum_{i=1}^n (\alpha_i - \alpha_i^*) K(x_i, x) + b.
+\end{equation*}
+\par Смещение \(b\) вычисляется через опорные векторы — точки, где выполняется одно из условий:
+\begin{equation*}
+    y_i - (w^T \phi(x_i) + b) = \epsilon, \quad \text{или} \quad y_i - (w^T \phi(x_i) + b) = -\epsilon.
+\end{equation*}
+\par Опорные векторы (\(\alpha_i > 0\) или \(\alpha_i^* > 0\)) определяют форму модели.
+
+\subsection{Выбор ядра}
+\par Выбор ядра играет ключевую роль в качестве работы модели SVM-регрессии. Различные ядра по-разному преобразуют входные данные, что может существенно повлиять на точность предсказаний и обобщающую способность модели.
+\par Выбор ядра зависит от особенностей данных, структуры зависимости и доступных вычислительных ресурсов. Экспериментальная проверка нескольких типов ядер и последующая оценка метрик качества модели — это ключевой этап в процессе выбора оптимального ядра.
+\par На рисунке ниже представлена SVM-регрессия с тремя типами ядер: RBF, линейным и полиномиальным. 
+\begin{figure}[h!]
+    \includegraphics[width = 0.8\textwidth]{MLbook/chapters/svm/images/svm_regression_cmp_models.png}
+    \centering
+    \caption{Сравнение SVM-регрессия с разными типами ядер}
+    \label{fig:kernel_comparison}
+\end{figure}
+
+\subsection{Задача 1}
+\textbf{Условие}:
+\par Рассмотрим следующий набор точек, лежащих на границе \(\epsilon\) - окрестности для SVM-регрессии с линейным ядром:
+\begin{equation*}
+    \{(1, 2), (2, 3), (3, 5), (4, 6)\}
+\end{equation*}
+\par Постройте регрессионную модель и найдите смещение \(b\), если \(w = 2\), \(\epsilon = 1\).
+\par \noindent \textbf{Решение:}
+\par Для нахождения смещения \(b\) необходимо использовать точки, которые лежат на границах \(\epsilon\)-окрестности. Мы знаем, что для таких точек выполняется равенство:
+\begin{equation*}
+    y_i - (w x_i + b) = \epsilon \quad \text{или} \quad y_i - (w x_i + b) = -\epsilon
+\end{equation*}
+\par Найдем для каждой точки \(b\), подставив их координаты в эти уравнения:
+\begin{itemize}
+\item Для точки \((1, 2)\):
+\begin{equation*}
+    2 - (2 \cdot 1 + b) = 1 \quad \Rightarrow \quad 2 - (2 + b) = 1 \quad \Rightarrow \quad -b = 1 \quad \Rightarrow \quad b = -1
+\end{equation*}
+\item Для точки \((2, 3)\):
+\begin{equation*}
+    3 - (2 \cdot 2 + b) = 1 \quad \Rightarrow \quad 3 - (4 + b) = 1 \quad \Rightarrow \quad -b = 2 \quad \Rightarrow \quad b = -2
+\end{equation*}
+\item Для точки \((3, 5)\):
+\begin{equation*}
+    5 - (2 \cdot 3 + b) = 1 \quad \Rightarrow \quad 5 - (6 + b) = 1 \quad \Rightarrow \quad -b = 2 \quad \Rightarrow \quad b = -2
+\end{equation*}
+\item Для точки \((4, 6)\):
+\begin{equation*}
+    6 - (2 \cdot 4 + b) = 1 \quad \Rightarrow \quad 6 - (8 + b) = 1 \quad \Rightarrow \quad -b = 3 \quad \Rightarrow \quad b = -3
+\end{equation*}
+\end{itemize}
+\par Для вычисления окончательного значения смещения \(b\), усредняем найденные значения:
+\begin{equation*}
+    b_{\text{avg}} = \frac{-1 + (-2) + (-2) + (-3)}{4} = \frac{-8}{4} = -2
+\end{equation*}
+\par Таким образом, смещение \(b = -2\).
+\par Регрессионная модель для SVM с линейным ядром имеет следующий вид:
+\begin{equation*}
+    f(x) = w x + b
+\end{equation*}
+\par Подставляем данное в условии значения \(w = 2\) и найденное значение \(b = -2\):
+\begin{equation*}
+    f(x) = 2x - 2
+\end{equation*}
+\par Это и есть наша линейная регрессионная модель.
+\par \noindent \textbf{Ответ:} \(f(x) = 2x - 2\).
+
+\subsection{Задача 2}
+\textbf{Условие:}
+\par У нас есть два набора данных для задачи регрессии:
+\begin{itemize}
+    \item Набор 1: \( \{(1, 2), (2, 3), (3, 4), (4, 5)\} \)    
+    \item Набор 2: \( \{(1, 1), (2, 4), (3, 9), (4, 16)\} \)  
+\end{itemize}
+\par Предположим, что мы используем SVM-регрессию с различными типами ядер (линейное, полиномиальное, RBF). Определите, какое ядро будет оптимальным для каждого набора данных.
+\par \noindent \textbf{Решение:}
+\begin{itemize}
+    \item Набор 1: данные имеют линейную зависимость, следовательно, линейное ядро будет лучшим выбором.
+
+    \item Набор 2: данные имеют квадратичную зависимость, следовательно, оптимально будет использовать полиномиальное ядро второй степени.
+\end{itemize}
+\par \noindent \textbf{Ответ:} для первого набора данных оптимальным ядром будет линейное, для второго набора данных - полиномиальное второй степени.
+
+\subsection{Задача 3}
+\textbf{Условие:}
+\par Дан набор данных для SVM-регрессии с линейным ядром: 
+\begin{equation*}
+    \{(1, 2), (2, 2.8), (3, 5.2), (4, 8)\}.
+\end{equation*}
+\par Параметры модели: \(w = 1.5\), \(b = 0.5\), \(\epsilon = 0.5\). 
+\begin{enumerate}
+    \item Определите, какие из точек набора данных находятся вне \(\epsilon\)-окрестности (требуют штрафных переменных \(\xi\) или \(\xi^*\)).
+    \item Вычислите значения штрафных переменных для этих точек.
+\end{enumerate}
+\par \noindent \textbf{Решение:}
+\begin{enumerate}
+\item Определение границ \(\epsilon\)-окрестности:
+   Уравнение модели SVM-регрессии с линейным ядром: 
+   \begin{equation*}
+    f(x) = wx + b.
+   \end{equation*}
+   Подсталяем данные в условии значения:
+   \begin{equation*}
+    f(x) = 1.5x + 0.5.
+   \end{equation*}
+   Границы \(\epsilon\)-окрестности:
+   \begin{equation*}
+    f(x) - \epsilon \leq y \leq f(x) + \epsilon.
+   \end{equation*}
+\item Проверка точек:
+\begin{itemize}
+    \item Для точки \((1, 2)\): 
+    \begin{equation*}
+        f(1) = 1.5 \cdot 1 + 0.5 = 2.0, \quad 2 - 0.5 \leq 2 \leq 2 + 0.5 \quad (\text{в окрестности}).
+    \end{equation*}
+    \item Для точки \((2, 2.8)\): 
+    \begin{equation*}
+        f(2) = 1.5 \cdot 2 + 0.5 = 3.5, \quad 3.5 - 0.5 \not\leq 2.8 \leq 3.5 + 0.5 \quad (\text{вне окрестности}).
+    \end{equation*}
+    \item Для точки \((3, 5.2)\): 
+    \begin{equation*}
+        f(3) = 1.5 \cdot 3 + 0.5 = 5.0, \quad 5.0 - 0.5 \leq 5.2 \leq 5.0 + 0.5 \quad (\text{в окрестности}).
+    \end{equation*}
+    \item Для точки \((4, 8)\): 
+    \begin{equation*}
+        f(4) = 1.5 \cdot 4 + 0.5 = 6.5, \quad 6.5 - 0.5 \leq 8.0 \not\leq 6.5 + 0.5 \quad (\text{вне окрестности}).
+    \end{equation*}
+\end{itemize}
+\item Штрафные переменные:
+\begin{itemize}
+    \item Для точки \((2, 2.8)\):
+    \begin{equation*}
+        \xi_i = f(2) - y - \epsilon = 3.5 - 2.8 - 0.5 = 0.2.
+    \end{equation*}
+    \item Для точки \((4, 8)\):
+    \begin{equation*}
+        \xi_i^* = y - f(4) - \epsilon = 8 - 6.5 - 0.5 = 1.0.
+    \end{equation*}
+\end{itemize}
+Таким образом, штрафные переменные:
+\begin{equation*}
+    \xi_2^* = 0.2, \quad \xi_4 = 1.0.
+\end{equation*}
+\end{enumerate}
+\par \noindent \textbf{Ответ:} \(\xi_2^* = 0.2, \quad \xi_4 = 1.0.\)
+
+
 \setcounter{secnumdepth}{0}
 
 \section{1-norm SVM (LASSO SVM)}
