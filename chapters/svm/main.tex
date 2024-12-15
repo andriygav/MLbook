@@ -531,7 +531,7 @@ Elastic Net менее жёстко отбирает признаки.
     \centering
     \includegraphics[width=0.8\linewidth]{chapters/svm/images/Elastic_Net.png}
     \caption{Зависимости весов \(w_j\) от коэффициента \(\log \frac{1}{\mu}\)}
-    \label{fig:mpr}
+    \label{fig:elastic_net}
 \end{figure}
 
 \section{Support Features Machine (SFM)}
@@ -882,3 +882,199 @@ $d_1, d_2, ..., d_n: d_1 \ge 0, d_2 \ge 0, ..., d_n \ge 0$ и $ d_1 + d_2 + ... 
   \caption{SVM в виде двухслойной нейросети}
   \label{fig:mpr}
 \end{figure}
+
+\section{Одноклассовый SVM}
+
+\subsection{Формулировка задачи}
+Пусть задан набор данных $\{x_i\}_{i=1}^n$, $x_i \in \mathbb{R}^d$. Одноклассовый SVM определяется решением следующей оптимизационной задачи:
+\[
+\min_{\mathbf{w},\rho,\{\xi_i\}} \frac{1}{2}\|\mathbf{w}\|^2 - \rho + \frac{1}{\nu n}\sum_{i=1}^n \xi_i
+\]
+при ограничениях
+\[
+(\mathbf{w}\cdot \phi(x_i)) \ge \rho - \xi_i, \quad \xi_i \ge 0, \quad i=1,\dots,n,
+\]
+где $\phi(\cdot)$ — отображение в спрямляющее пространство, $\nu \in (0,1]$ — заданный параметр.
+
+\subsection{Двойственная форма}
+Двойственная задача может быть записана следующим образом:
+\[
+\max_{\{\alpha_i\}} \left( \rho = \min_i \left( \mathbf{w} \cdot \phi(x_i) \right) \right), 
+\]
+где
+\[
+\mathbf{w} = \sum_{i=1}^n \alpha_i \phi(x_i), \quad \sum_{i=1}^n \alpha_i = 1, \quad 0 \le \alpha_i \le \frac{1}{\nu n}.
+\]
+
+Подстановкой ядровой функции $K(x_i,x_j) = \phi(x_i) \cdot \phi(x_j)$ получаем зависимость решения от скалярных произведений в спрямляющем пространстве:
+\[
+\mathbf{w} \cdot \phi(x) = \sum_{i=1}^n \alpha_i K(x_i,x).
+\]
+
+\subsection{Принятие решения}
+Для новой точки $x$ проверяется знак:
+\[
+f(x) = \mathbf{w}\cdot\phi(x) - \rho.
+\]
+Если $f(x)<0$, точка считается не принадлежащей множеству основных данных.
+
+\subsection{Задача 1}
+Дан набор данных $\{x_i\}_{i=1}^n$, $x_i \in \mathbb{R}^d$. Одноклассовый SVM решает задачу:
+\[
+\min_{\mathbf{w},\rho,\{\xi_i\}} \frac{1}{2}\|\mathbf{w}\|^2 - \rho + \frac{1}{\nu n}\sum_{i=1}^n \xi_i
+\]
+при ограничениях
+\[
+(\mathbf{w}\cdot\phi(x_i))\ge\rho-\xi_i, \quad \xi_i\ge0.
+\]
+
+\textbf{Требуется:} Найти двойственную постановку задачи.
+
+\subsection{Решение}
+Двойственная задача:
+\[
+\max_{\{\alpha_i\}} \rho = \min_i \sum_{j=1}^n \alpha_j K(x_j,x_i)
+\]
+при условиях
+\[
+\sum_{i=1}^n \alpha_i = 1,\quad 0 \le \alpha_i \le \frac{1}{\nu n}.
+\]
+Здесь $\mathbf{w} = \sum_{i=1}^n \alpha_i \phi(x_i)$ и $K(x_i,x_j)=\phi(x_i)\cdot \phi(x_j)$.
+
+\hrulefill
+
+\subsection{Задача 2}
+При заданном решении одноклассового SVM для новой точки $x$ вычисляется:
+\[
+f(x)=\mathbf{w}\cdot\phi(x)-\rho.
+\]
+\textbf{Требуется:} Выразить $f(x)$ через $\{\alpha_i\}$ и $K(x_i,x)$.
+
+\subsection{Решение}
+\[
+f(x) = \left(\sum_{i=1}^n \alpha_i K(x_i,x)\right) - \rho.
+\]
+
+\hrulefill
+
+\subsection{Задача 3}
+Докажите, что для оптимального решения одноклассового SVM количество ненулевых коэффициентов $\alpha_i$ не меньше $\lceil\nu n\rceil$.
+
+\subsection{Решение}
+Из условий задачи:
+\[
+\sum_{i=1}^n \alpha_i = 1,\quad 0 \le \alpha_i \le \frac{1}{\nu n}.
+\]
+Предположим, что ненулевых $\alpha_i$ меньше, чем $\lceil\nu n\rceil$. Тогда даже при максимальном значении каждого ненулевого $\alpha_i = \frac{1}{\nu n}$ сумма $\sum_{i=1}^n \alpha_i$ не могла бы достичь 1 (поскольку $\lceil \nu n \rceil \cdot \frac{1}{\nu n}\ge1$). Следовательно, для выполнения условия суммы равной единице необходимо не менее $\lceil\nu n\rceil$ ненулевых коэффициентов.
+
+
+\section{Теорема Мерсера}
+
+Как уже было сказано ранее, для применения SVM к выборке, не являющейся линейно разделимой, можно перейти в гильбертово пространство $\mathcal{H}$ большей размерности, то есть признаковое описание $x \in \mathcal{X}$ каждого объекта можно заменить вектором $\varphi(x) \in \mathcal{H}$. В результате выборка, которую нельзя линейно разделить в $\mathcal{X}$, может стать линейно разделимой в $\mathcal{H}$. Поскольку для метода опорных векторов важно лишь скалярное произведение объектов, можно явно не находить вложение $\varphi \colon \mathcal{X} \to \mathcal{H}$, а вместо скалярного произведения $\langle x, x' \rangle_\mathcal{X}$ использовать ядро $K(x, x') = \langle \varphi(x), \varphi(x') \rangle_\mathcal{H}$. Естественным образом возникает следующий вопрос: каким требованиям должна удовлетворять функция $K(x, x')$, чтобы она являлась ядром? Необходимые и достаточные условия определяет следующая теорема.
+
+\begin{theorem}[Мерсер]
+Пусть $\mathcal{X}$ --- компактное хаусдорфово пространство с борелевской мерой $\mu$ (например, компактное подмножество $\mathbb{R}^n$ с мерой Лебега). Непрерывная функция $K \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ является ядром тогда и только тогда, когда она удовлетворяет следующим двум условиям:
+\begin{enumerate}
+    \item симметричность: \[ \forall x, x' \in \mathcal{X}: \ K(x, x') = K(x', x), \]
+    \item неотрицательная определённость: \[ \forall g \in L^2(\mathcal{X}): \ \int_\mathcal{X} \int_\mathcal{X} K(x, x') g(x) g(x') d\mu(x) d\mu(x') \ge 0. \]
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+($\Rightarrow$) Пусть $K(x, x') = \langle \varphi(x), \varphi(x') \rangle_\mathcal{H}$ для некоторой функции $\varphi \colon \mathcal{X} \to \mathcal{H}$. Симметричность следует из симметричности скалярного произведения. Покажем неотрицательную определённость:
+\begin{align*}
+    \int_\mathcal{X} \int_\mathcal{X} K(x, x') g(x) g(x') d\mu(x) d\mu(x') &= \int_\mathcal{X} \int_\mathcal{X} \langle \varphi(x), \varphi(x') \rangle_\mathcal{H} g(x) g(x') d\mu(x) d\mu(x') \\
+    &= \int_\mathcal{X} \int_\mathcal{X} \langle \varphi(x) g(x), \varphi(x') g(x') \rangle_\mathcal{H} d\mu(x) d\mu(x') \\
+    &= \left\langle \int_\mathcal{X} \varphi(x) g(x) d\mu(x), \int_\mathcal{X} \varphi(x') g(x') d\mu(x') \right\rangle \ge 0.
+\end{align*}
+
+($\Leftarrow$) Рассмотрим интегральный оператор Гильберта-Шмидта $T_K \colon L^2(\mathcal{X}) \to L^2(\mathcal{X})$, соответствующий функции $K(x, x')$:
+\[ [T_K(f)](x) = \int_\mathcal{X} f(x') K(x, x') d\mu(x'). \]
+Из симметричности функции $K(x, x')$ и теоремы Фубини следует, что оператор $T_K$ является самосопряжённым. Пользуясь теоремой Арцела-Асколи можно показать, что образ единичного шара в $L^2(\mathcal{X})$ под действием $T_K$ является предкомпактом, откуда следует, что $T_K$ --- компактный оператор. Значит, к $T_K$ применима спектральная теорема, то есть существует ортонормированная система векторов $(\psi_i)_{i=1} ^\infty$ в $L^2(\mathcal{X})$ и последовательность вещественных чисел $(\lambda_i)_{i=1}^\infty$ такие, что оператор $T_K$ представим в виде
+\[ T_K(f) = \sum_{i=1}^\infty \lambda_i \langle f, \psi_i \rangle_{L^2(\mathcal{X})} \psi_i. \]
+Из неотрицательной определённости функции $K(x, x')$ получаем неотрицательность чисел $\lambda_i$:
+\begin{align*}
+    \lambda_i \langle \psi_i, \psi_i \rangle_{L^2(\mathcal{X})} &= \langle \psi_i, T_K \psi_i \rangle_{L^2(\mathcal{X})} \\
+    &= \int_\mathcal{X} \psi(x) \left( \int_\mathcal{X} \psi(x') K(x, x') d\mu(x') \right) d\mu(x) \ge 0.
+\end{align*}
+Определим функцию $\varphi \colon \mathcal{X} \to \ell^2(\mathbb{N})$ следующим образом: $\varphi(x) = (\sqrt{\lambda_i} \psi_i(x))_{i=1}^\infty$. Для любой функции $f \in L^2(\mathcal{X})$ и любого $x \in \mathcal{X}$ имеем
+\begin{align*}
+    [T_K(f)](x) &= \sum_{i=1}^\infty \lambda_i \langle f, \psi_i \rangle_{L^2(\mathcal{X})} \psi_i(x) \\
+    &= \sum_{i=1}^\infty \lambda_i \psi_i(x) \int_\mathcal{X} f(x') \psi(x') d\mu(x') \\
+    &= \int_\mathcal{X} \sum_{i=1}^\infty \lambda_i \psi_i(x) f(x') \psi(x') d\mu(x') \\
+    &= \int_\mathcal{X} \langle \varphi(x), \varphi(x') \rangle_{\ell^2(\mathbb{N})} f(x') d\mu(x').
+\end{align*}
+Таким образом, $K(x, x') = \langle \varphi(x), \varphi(x') \rangle_{\ell^2(\mathbb{N})}$.
+\end{proof}
+
+В качестве примера применения теоремы Мерсера покажем, каким образом можно получать новые ядра из уже известных.
+
+\begin{lemma}
+\label{lemma:new_kernels_from_old}
+Следующие функции являются ядрами:
+\begin{enumerate}
+    \item $K(x, x') = \operatorname{const}$;
+    \item $K(x, x') = c_1 K_1(x, x') + c_2 K_2(x, x')$, где $K_1, K_2 \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ --- ядра, $c_1, c_2 \ge 0$ --- константы;
+    \item $K(x, x') = K_1(x, x') K_2(x, x')$, где $K_1, K_2 \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ --- ядра;
+    \item $K(x, x') = p(K'(x, x'))$, где $K' \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ --- ядро, $p$ --- многочлен с неотрицательными коэффициентами;
+    \item $K(x, x') = \exp(K'(x, x'))$, где $K' \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ --- ядро.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+Докажем первый пункт. Симметричность очевидна. Неотрицательная определённость следует из теоремы Фубини:
+\[ \int_\mathcal{X} \int_\mathcal{X} c g(x) g(x') d\mu(x) d\mu(x') = c \left( \int_\mathcal{X} g(x) d\mu(x) \right)^2 \ge 0. \]
+Доказательство остальных пунктов оставлено в качестве упражнения.
+\end{proof}
+
+\subsection{Задачи}
+
+\begin{problem}
+Являются ли следующие функции ядрами на множестве $[0,1] \times [0,1]$?
+\begin{enumerate}
+    \item $K_1(x, x') = x^4 + (x')^2$;
+    \item $K_2(x, x') = |x - x'|$;
+    \item $K_3(x, x') = x x'$.
+\end{enumerate}
+\end{problem}
+\begin{solution}
+\begin{enumerate}
+    \item Нет, поскольку $K_1$ не симметрична: $K_1\left(1, \frac{1}{2}\right) \ne K_1\left(\frac{1}{2}, 1\right)$.
+    \item Нет, поскольку $K_2$ не является неотрицательно определённой:
+    \[ \int_0^1 \int_0^1 |x - x'| \cdot (-x) d\mu(x) d\mu(x') = -\frac{1}{6} < 0. \]
+    \item Да, это следует из леммы \ref{lemma:new_kernels_from_old}.
+\end{enumerate}
+\end{solution}
+
+\begin{problem}
+Пусть $K \colon \mathcal{X} \times \mathcal{X} \to \mathbb{R}$ --- ядро. Выразите $\int_\mathcal{X} K(x, x) d\mu(x)$ через собственные значения соответствующего интегрального оператора Гильберта-Шмидта $T_K(f) = \int_\mathcal{X} f(x') K(x, x') d\mu(x')$.
+\end{problem}
+\begin{solution}
+\begin{align*}
+    \int_\mathcal{X} K(x, x) d\mu(x) &= \int_\mathcal{X} \langle \varphi(x), \varphi(x) \rangle_{\ell^2(\mathbb{N})} d\mu(x) \\
+    &= \int_\mathcal{X} \sum_{i=1}^\infty \lambda_i \psi_i^2(x) d\mu(x) \\
+    &= \sum_{i=1}^\infty \lambda_i \langle \psi_i, \psi_i \rangle \\
+    &= \sum_{i=1}^\infty \lambda_i.
+\end{align*}
+Таким образом, интеграл $\int_\mathcal{X} K(x, x) d\mu(x)$ равен следу оператора $T_K$.
+\end{solution}
+
+\begin{problem}
+Докажите пункты 2-5 в лемме \ref{lemma:new_kernels_from_old}.
+\end{problem}
+\begin{solution}
+Симметричность во всех случаях очевидна. По теореме Мерсера достаточно доказать неотрицательную определённость.
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Коническая комбинация неотрицательно определённых функций также неотрицательно определена.
+    \item Имеем
+    \begin{align*}
+        K_1(x, x') K_2(x, x') &= \langle \varphi_1(x), \varphi_1(x') \rangle \langle \varphi_2(x), \varphi_2(x') \rangle \\
+        &= \left( \sum_{i=1}^\infty \lambda_i^{(1)} \psi_i^{(1)}(x)\psi_i^{(1)}(x') \right) \left( \sum_{j=1}^\infty \lambda_j^{(2)} \psi_j^{(2)}(x)\psi_j^{(2)}(x') \right) \\
+        &= \sum_{i=1}^\infty \sum_{j=1}^\infty \lambda_i^{(1)} \lambda_j^{(2)} \psi_i^{(1)}(x) \psi_j^{(2)}(x) \psi_i^{(1)}(x') \psi_j^{(2)}(x').
+    \end{align*}
+    Возьмём произвольную биекцию $\tau \colon \mathbb{N} \to \mathbb{N} \times \mathbb{N}$ и определим следующее отображение:
+    \[ \varPhi(x) = \left(\sqrt{\lambda^{(1)}_{\tau(k)_1} \lambda^{(2)}_{\tau(k)_2}} \cdot \psi_{\tau(k)_1}^{(1)}(x) \cdot \psi_{\tau(k)_2}^{(2)}(x)\right)_{k=1}^\infty. \]
+    Тогда $K_1(x, x') K_2(x, x') = \langle \varPhi(x), \varPhi(x') \rangle$.
+    \item Следует из пунктов 1, 2 и 3.
+    \item Из пункта 4 следует, что $K_n(x, x') = \sum_{i=0}^n \frac{[K'(x, x')]^n}{n!}$ является ядром для любого $n \in \mathbb{N}$. Последовательность функций $K_n$ равномерно сходится к $K = \exp \circ K'$ на компактном пространстве $\mathcal{X}$, поэтому $K$ неотрицательно определена.
+\end{enumerate}
+\end{solution}

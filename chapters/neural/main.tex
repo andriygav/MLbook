@@ -552,7 +552,7 @@ $$
 
 \includegraphics[width=0.2\linewidth]{chapters/neural/images/пуллинг.png}
 
-\label{fig:mpr}
+\label{fig:pulling}
 
 \end{figure}
 
@@ -562,7 +562,7 @@ $$
 
 \includegraphics[width=0.8\linewidth]{chapters/neural/images/1CNN.png}
 
-\label{fig:mpr}
+\label{fig:one_cnn}
 
 \end{figure}
 
@@ -582,7 +582,7 @@ $$
 
 \includegraphics[width=0.8\linewidth]{chapters/neural/images/pic.png}
 
-\label{fig:mpr}
+\label{fig:voice_signals_nn}
 
 \end{figure}
 
@@ -605,7 +605,7 @@ $$
 
 \includegraphics[width=0.8\linewidth]{chapters/neural/images/обобщениеCNN.png}
 
-\label{fig:mpr}
+\label{fig:cnn_generalization}
 
 \end{figure}
 
@@ -750,7 +750,6 @@ $$
 \end{itemize}
 
 \end{description}
-
 
 
 \section*{Оптимальное прореживание нейронных сетей}
@@ -958,3 +957,135 @@ SGD часто используется благодаря своей прост
     \item $\hat{m}_t = \frac{m_t}{1 - \beta_1^t}$. При $t \to \infty$, $\beta_1^t \to 0$, поэтому $1 - \beta_1^t \to 1$ и $\hat{m}_t \to m_t$.
     \item Аналогично, $\hat{v}_t = \frac{v_t}{1 - \beta_2^t}$, и при $t \to \infty$, $\hat{v}_t \to v_t$.
 \end{itemize}
+
+\section{LSTM и GRU}
+
+\subsection{LSTM. Основная идея}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\linewidth]{chapters/neural/images/lstm.png}
+	\caption{Схема LSTM}
+	\label{img:lstm}
+\end{figure}
+Основная идея LSTM~\cite{hochreiter1997long} --- использование механизма \textbf{ячейки памяти} и набора \textbf{затворов (gates)}, которые регулируют, какая часть информации из предыдущих шагов будет запоминаться, забываться и выводиться на выход. Это позволяет LSTM ``удерживать'' важную информацию на более длинных промежутках.
+
+\subsection{Структура LSTM-ячейки}
+В классической LSTM-ячейке три затвора:
+\begin{enumerate}
+    \item \textbf{Forget gate} (затвор забывания) управляет тем, какая часть предыдущего состояния памяти $C_{t-1}$ будет \textit{забыта}.
+    \item \textbf{Input gate} (затвор записи) определяет, какая часть нового кандидата состояния $\tilde{C}_t$ попадёт в текущее состояние памяти.
+    \item \textbf{Output gate} (затвор выхода) определяет, какая часть текущего состояния памяти $C_t$ будет подана на выход $h_t$.
+\end{enumerate}
+
+Типичные формулы (безbias-термов):
+\[
+f_t = \sigma(W_f \cdot [h_{t-1}, x_t]), \quad
+i_t = \sigma(W_i \cdot [h_{t-1}, x_t]), \quad
+\tilde{C}_t = \tanh(W_C \cdot [h_{t-1}, x_t]),
+\]
+\[
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t,
+\]
+\[
+o_t = \sigma(W_o \cdot [h_{t-1}, x_t]), \quad
+h_t = o_t \odot \tanh(C_t).
+\]
+
+\subsection{Продвинутые моменты LSTM}
+\begin{itemize}
+    \item \textbf{Bidirectional LSTM}: двунаправленная архитектура для учёта контекста слева и справа.
+    \item \textbf{Stacked LSTM}: многослойные (глубокие) LSTM для повышения выразительности.
+    \item \textbf{Dropout и Recurrent Dropout}: регуляризация занулением нейронов в связях.
+    \item \textbf{Attention Mechanisms}: совмещение с механизмом внимания (Attention) для более гибкого «фокуса» на нужных шагах входной последовательности.
+\end{itemize}
+
+\subsection{Архитектура GRU}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\linewidth]{chapters/neural/images/gru.png}
+	\caption{Схема GRU}
+	\label{img:gru}
+\end{figure}
+GRU (Gated Recurrent Unit) была предложена в работе~\cite{cho2014properties} как упрощение по сравнению с LSTM: используется всего два затвора (update и reset), что уменьшает число параметров модели.
+
+\subsection{Структура GRU-ячейки}
+\begin{enumerate}
+    \item \textbf{Update gate} $z_t$ управляет тем, сколько информации из предыдущего выхода $h_{t-1}$ перенести в новое состояние.
+    \item \textbf{Reset gate} $r_t$ определяет, сколько ``старой'' информации нужно сбросить перед вычислением текущего кандидата.
+\end{enumerate}
+
+Основные формулы:
+\[
+z_t = \sigma(W_z \cdot [h_{t-1}, x_t]), \quad
+r_t = \sigma(W_r \cdot [h_{t-1}, x_t]),
+\]
+\[
+\tilde{h}_t = \tanh \bigl(W_h \cdot [r_t \odot h_{t-1}, x_t]\bigr),
+\]
+\[
+h_t = (1 - z_t)\odot h_{t-1} + z_t \odot \tilde{h}_t.
+\]
+
+\subsection{Преимущества GRU}
+\begin{itemize}
+    \item Меньше параметров по сравнению с LSTM, что может ускорять обучение.
+    \item Часто качество на задачах NLP и временных рядах сопоставимо с LSTM.
+\end{itemize}
+
+\subsection{Продвинутые моменты GRU}
+\begin{itemize}
+    \item \textbf{Layer Normalization / BatchNorm}: нормализация на выходе или по слоям помогает стабилизировать обучение.
+    \item \textbf{Residual/Skip Connections}: добавляются короткие связи для улучшения обратного распространения ошибки.
+    \item \textbf{Bidirectional GRU}: аналогично двунаправленным LSTM, учитываем контекст с двух сторон.
+\end{itemize}
+
+\subsection{Сравнение LSTM и GRU}
+\begin{itemize}
+    \item LSTM имеет более гибкую структуру (три затвора, отдельное состояние $C_t$), но и больше параметров.
+    \item GRU проще, часто обучается быстрее и даёт сравнимое качество.
+\end{itemize}
+
+
+\subsection{Теоретическая Задача 1: Анализ взрывающих и затухающих градиентов}
+Объясните, почему в классической RNN (без затворов) возникает проблема затухающих и взрывающих градиентов при обучении на длинных последовательностях. Как архитектуры LSTM и GRU помогают смягчить эту проблему?
+
+\begin{itemize}
+    \item \textbf{Классическая RNN} использует повторяющиеся умножения весовых матриц на каждом временном шаге. Для длинных цепочек такие последовательные умножения могут привести к экспоненциальному затуханию или экспоненциальному росту (взрыв градиентов), поскольку собственные значения матриц многократно перемножаются.
+    \item \textbf{LSTM и GRU} вводят механизмы затворов и явные пути прямой передачи градиента (``гейтированные'' или ``прямые'' связи через состояние), что существенно стабилизирует процесс обучения. Ячейка памяти LSTM (и аналогичная структура в GRU) создаёт путь, по которому градиент может проходить без постоянного перемножения на матрицу весов. Таким образом, модели меньше страдают от затухания или взрыва.
+\end{itemize}
+
+\subsection{Теоретическая Задача 2: Сравнение количества параметров в LSTM и GRU}
+Предположим, что размерность входа равна $d$, а размер скрытого состояния равен $h$. Сравните (количественно) число обучаемых параметров в одной LSTM-ячейке и одной GRU-ячейке. Объясните, как это влияет на время обучения и возможность переобучения?
+
+\begin{itemize}
+    \item \textbf{LSTM} имеет 4 вычислительных ``ветви'' (forget, input, candidate, output), каждая включает матрицу весов для входа $W_{*}^{(x)}$ и для предыдущего скрытого состояния $W_{*}^{(h)}$, а также соответствующие bias. Итого для LSTM:
+    \[
+    \text{Параметры в LSTM} \approx 4 \cdot (d \cdot h + h \cdot h + h)
+    \]
+    \item \textbf{GRU} имеет 3 ветви (update, reset, candidate), что даёт формулу:
+    \[
+    \text{Параметры в GRU} \approx 3 \cdot (d \cdot h + h \cdot h + h)
+    \]
+    \item Таким образом, GRU имеет меньше параметров, что может приводить к более быстрой сходимости и меньшей склонности к переобучению (но и менее ``гибкой'' архитектуре в некоторых случаях).
+\end{itemize}
+
+\subsection{Теоретическая Задача 3: Пределы LSTM/GRU при очень длинных зависимостях}
+
+Поясните, в каких случаях даже LSTM или GRU могут не справляться с очень длинными зависимостями? Предложите, какие механизмы или архитектуры способны улучшить качество работы с подобными зависимостями.
+
+\begin{itemize}
+    \item \textbf{Очень длинные зависимости}: даже с механизмами затворов для очень больших длин (например, сотни или тысячи временных шагов) LSTM/GRU могут всё ещё сталкиваться с трудностями в запоминании самых первых шагов. 
+    \item \textbf{Mechanisms/архитектуры}: 
+    \begin{itemize}
+        \item \textbf{Attention} (применение в Encoder-Decoder архитектурах). Позволяет модели ``обращаться'' к нужным шагам напрямую, минуя долгую цепочку рекуррентных состояний.
+        \item \textbf{Transformers}: полностью отказываются от рекуррентной структуры и используют механизм внимания (self-attention), что улучшает способность моделировать дальние зависимости.
+        \item \textbf{Memory-augmented networks} (Neural Turing Machines, Memory Networks): явное внешнее хранилище.
+    \end{itemize}
+\end{itemize} 
+
+\begin{thebibliography}{99}
+\bibitem{hochreiter1997long} S.~Hochreiter, J.~Schmidhuber, \textit{Long short-term memory.} Neural Computation, 9(8), 1735--1780, 1997.
+\bibitem{cho2014properties} K.~Cho, B.~van Merrienboer, D.~Bahdanau, Y.~Bengio, \textit{On the properties of neural machine translation: Encoder-decoder approaches.} arXiv preprint arXiv:1409.1259, 2014.
+\end{thebibliography}
