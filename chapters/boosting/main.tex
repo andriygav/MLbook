@@ -304,7 +304,132 @@ b_t(x_i) = -g_i.
     \item Параграф из учебника ШАДа про градиентный бустинг — \href{https://education.yandex.ru/handbook/ml/article/gradientnyj-busting}{ШАД}.
     \item Популярный источник с несколькими вариациями объяснения — \href{https://explained.ai/gradient-boosting/}{explained.ai}.
 \end{itemize}
+    \section{AdaBoost}
+    
+    Если в методе градиентного бустинга в качестве функции потерь $L(M)$ мы возьмём экспоненциальную функцию $e^{-M}$, то мы получим один из самых известных и один из первых методов бустинга под названием \textbf{AdaBoost} (Adaptive Boosting), предложенный в своём первоначальном виде в 1995-м году Йоавом Фройндом и Робертом Шапиром.
+    
+    Рассмотрим задачу двухклассовой классификации:
+    
+    \noindent $X^{\ell}=\left(x_i, y_i\right)_{i=1}^{\ell} \subset X \times Y-$ обучающая выборка, $Y=\{ \pm 1\}$;
+    
+    \noindent$b_t: X \rightarrow \{-1, 0, +1\},\quad t=1, \ldots, T$ - обучаемые базовые алгоритмы, при этом мы позволили им при необходимости отказываться от классификации и приписывать объекту нулевой класс.
+    Составим ансамбль базовых алгоритмов:
+	\begin{equation*}
+    	a_T(x)=\operatorname{sign}\left(\sum_{t=1}^T \alpha_t b_t(x)\right), \quad x \in X.
+    \end{equation*}
+    Функционал качества аппроксимируем с помощью выбранной нами экспоненциальной функцией потерь:
+    \begin{equation*}
+    	Q_T=\sum_{i=1}^{\ell}\left[y_i \sum_{t=1}^T \alpha_t b_t\left(x_i\right)<0\right]\leqslant \widetilde{Q}_T=\sum_{i=1}^{\ell} {\exp \left(-y_i \sum_{t=1}^{T} \alpha_t b_t\left(x_i\right)\right)}.
+    \end{equation*}
+    
+    
+    Чтобы воспользоваться основной эвристикой бустинга
+    -- фиксацией $\alpha_1 b_1(x)$,~\ldots, $\alpha_{T-1} b_{T-1}(x)$ при добавлении $\alpha_T b_T(x)$ -- распишем это в виде
+    
+    \begin{equation*}
+    \widetilde{Q}_T=\sum_{i=1}^{\ell} \underbrace{\exp \left(-y_i \sum_{t=1}^{T-1} \alpha_t b_t\left(x_i\right)\right)}_{{w_i}^{(T-1)}} \exp \left(-y_i \alpha_T b_T\left(x_i\right)\right).
+    \end{equation*}
+    
+    Величинам $w_i$ (для краткости опустим верхние индексы) можно дать следующую интерпретацию: чем сильнее композиция предыдущих алгоритмов ошибается на объекте $x_i$, тем больше вес $w_i$ у этого объекта, и тем важнее новому базовому алгоритму правильно его классифицировать.
+    
+    Для удобства введём нормированные веса: $\widetilde{W}^{\ell}=\left(\tilde{w}_1, \ldots, \tilde{w}_{\ell}\right), \quad \tilde{w}_i=w_i / \sum_{j=1}^{\ell} w_j$.
+    Определим также две величины: взвешенная доля ошибочных (negative) и правильных (positive) классификаций с нормированными весами $U^{\ell}=\left(u_1, \ldots, u_{\ell}\right)$:
+    \begin{equation*}
+    	N\left(b, U^{\ell}\right)=\sum_{i=1}^{\ell} u_i\left[b\left(x_i\right)=-y_i\right] ; \quad P\left(b, U^{\ell}\right)=\sum_{i=1}^{\ell} u_i\left[b\left(x_i\right)=y_i\right] .
+    \end{equation*}
+    
+    $1-N-P-$ взвешенная доля отказов от классификации.
+    
+    Сформулируем теперь основную теорему.
+    \begin{theorem}[Freund, Schapire]
+    	Пусть $\mathscr{B}$ -- такое семейство базовых алгоритмов, что для любого нормированного вектора весов $U^{\ell}$ существует алгоритм $b \in \mathscr{B}$, классифицирующий выборку хотя бы немного лучше, чем наугад: $P\left(b ; U^{\ell}\right)>N\left(b ; U^{\ell}\right)$.
+    	Тогда минимум функционала $\widetilde{Q}_T$ достигается при
+    	
+    	\begin{equation*}
+    		\begin{aligned}
+    			& b_T=\arg \max _{b \in \mathscr{B}} \sqrt{P\left(b ; \widetilde{W}^{\ell}\right)}-\sqrt{N\left(b ; \widetilde{W}^{\ell}\right)}, \\
+    			& \alpha_T=\frac{1}{2} \ln \frac{P\left(b_T ; \widetilde{W}^{\ell}\right)}{N\left(b_T ; \widetilde{W}^{\ell}\right)}
+    		\end{aligned}
+    	\end{equation*}
+    \end{theorem}
+    
+    \begin{proof}
+    	\begin{enumerate}[1)]
+    		\item Воспользуемся тождеством:
+    	\begin{equation*}
+    		e^{-\alpha b}=e^{-\alpha}[b=1]+e^\alpha[b=-1]+[b=0],\quad \forall \alpha \in \mathbb{R}, \forall b \in\{-1, 0, +1\}.
+    	\end{equation*}
 
+    
+    
+    
+    Положим для краткости $\alpha=\alpha_T$ и $b_i=b_T\left(x_i\right)$. Тогда
+    
+    \begin{equation*}
+    	\begin{aligned}
+    		& \widetilde{Q}_T=(e^{-\alpha} \underbrace{\sum_{i=1}^{\ell} \tilde{w}_i\left[b_i=y_i\right]}_P+e^\alpha \underbrace{\sum_{i=1}^{\ell} \tilde{w}_i\left[b_i=-y_i\right]}_N+\underbrace{\sum_{i=1}^{\ell} \tilde{w}_i\left[b_i=0\right]}_{1-P-N}) \underbrace{\sum_{i=1}^{\ell} w_i}_{\tilde{Q}_{T-1}}= \\
+    		&=\left(e^{-\alpha} P+e^\alpha N+(1-P-N)\right) \widetilde{Q}_{T-1} \rightarrow \min _{\alpha, b}. \\
+    		
+    	\end{aligned}
+    \end{equation*}
+    Решая задачу минимизации для $\alpha$, находим
+    \begin{equation*}
+    	\frac{\partial}{\partial \alpha} \widetilde{Q}_T=\left(-e^{-\alpha} P+e^\alpha N\right) \widetilde{Q}_{T-1}=0 \Rightarrow e^{-\alpha} P=e^\alpha N \Rightarrow e^{2 \alpha}=\frac{P}{N} .
+    \end{equation*}
+    
+    Получили требуемое: $\alpha_T=\frac{1}{2} \ln \frac{P}{N}$.
+    
+    \item Подставим теперь оптимальное значение $\alpha=\frac{1}{2} \ln \frac{P}{N}$ обратно в $\widetilde{Q}_T$ :
+    
+    \begin{equation*}
+    	\begin{aligned}
+    		\widetilde{Q}_T & =\left(e^{-\alpha} P+e^\alpha N+(1-P-N)\right) \widetilde{Q}_{T-1}= \\
+    		& =\left(1+\sqrt{\frac{N}{P}} P+\sqrt{\frac{P}{N}} N-P-N\right) \widetilde{Q}_{T-1}= \\
+    		& =\left(1-(\sqrt{P}-\sqrt{N})^2\right) \widetilde{Q}_{T-1} \rightarrow \min _b .
+    	\end{aligned}
+    \end{equation*}
+    
+    
+    Поскольку $\widetilde{Q}_{T-1}$ не зависит от $\alpha_T$ и $b_T$, минимизация $\widetilde{Q}_T$ эквивалентна либо максимизации $\sqrt{P}-\sqrt{N}$ при $P>N$, либо максимизации $\sqrt{N}-\sqrt{P}$ при $P<N$, однако второй случай исключён условием теоремы.
+    
+    Получили $b_T=\arg \max\limits_{b} \sqrt{P}-\sqrt{N}$. \qedhere
+\end{enumerate}
+    \end{proof}
+    
+    \subsection*{Рекомендации}
+    \begin{itemize}
+    	\item Базовые классификаторы (weak classifiers):
+    		\begin{itemize}
+    			\item решающие деревья - используются чаще всего;
+    			\item пороговые правила, т.н. «решающие пни» (data stumps)
+    			\begin{equation*}
+    				\mathscr{B}=\left\{b(x)=\left[f_j(x) \lessgtr \theta\right] \mid j=1, \ldots, n,\quad \theta \in \mathbb{R}\right\};
+    			\end{equation*}
+    			\item для SVM бустинг не эффективен.
+    		\end{itemize}
+    	\item Отсев шума: отбросить объекты с наибольшими $w_i$, чтобы избежать экспоненциального роста весов на шумовых объектах;
+    	\item Модификация формулы для $\alpha_t$ на случай $N=0$:
+    	
+    	\begin{equation*}
+    		\alpha_t:=\frac{1}{2} \ln \frac{1-N\left(b_t ; W^{\ell}\right)+\frac{1}{\ell}}{N\left(b_t ; W^{\ell}\right)+\frac{1}{\ell}} ;
+    	\end{equation*}
+    \end{itemize}
+
+    \subsection*{Задачи}
+    \textbf{Задача 1:} В исходной статье 1995-го года базовые алгоритмы могли принимать только значения из множества $\{-1, 1\}$. Как в этом случае изменится условие и утверждение теоремы?
+    
+    \textbf{Задача 2:} Доказать, что функцию качества $Q_{T}$ ансамбля $a_{T}$, построенного на шаге $T$, можно сверху оценить суммой весов $\sum_{j=1}^\ell w_j^{(T)}$.
+    
+    \textit{Решение:} $w_j^{(T)}={\exp \left(-y_j \sum_{t=1}^{T} \alpha_t b_t\left(x_j\right)\right)}={\exp \left(-y_j a_T\left(x_j\right)\right)}$. Если ансамбль ошибается на объекте $x_j$, то выражение под экспонентой положительное, и $w_j^{(T)}~>~0$. Так как $Q_T$ равна число ошибок классификации, а сумма весов превышает число ошибок, получаем требуемое.
+    
+    \textbf{Задача 3:} Пусть на каждом шаге построения ансамбля верно неравенство 
+    \begin{equation*}
+    	\sqrt{P\left(b_t ; \widetilde{W}^{\ell}\right)}-\sqrt{N\left(b_t ; \widetilde{W}^{\ell}\right)}=\gamma_t>\gamma>1.
+    \end{equation*}
+    Доказать, что за конечное число шагов алгоритм AdaBoost перестанет ошибаться на обучающей выборке.
+    
+    \textit{Указания:} Воспользоваться тем, что $Q_T$ принимает только неотрицательные целочисленные значения; выразить, воспользовавшись доказательством теоремы, $\widetilde{Q}_{T}$ через $\widetilde{Q}_{T-1}$; использовать неравенство.
+    
 \section{Yandex MatrixNet}
 В этой главе мы рассмотрим Yandex MatrixNet - модель, которая долгое время активно применялась в проде рекламных и других технологий Яндекса. \\
 Вот выжимка, \href{https://yandex.ru/company/technologies/matrixnet/}{как сам Яндекс пишет про модель}:\\
